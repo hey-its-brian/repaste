@@ -81,6 +81,29 @@ final class HistoryStoreTests: XCTestCase {
         XCTAssertEqual(perms, 0o600)
     }
 
+    func testRemoveAllFromApp() {
+        let store = HistoryStore(fileURL: nil, limit: 10)
+        store.add("secret", sourceAppBundleID: "com.1password.1password")
+        store.add("hello", sourceAppBundleID: "com.apple.Safari")
+        store.add("otp", sourceAppBundleID: "com.1password.1password")
+        XCTAssertEqual(store.removeAll(fromApp: "com.1password.1password"), 2)
+        XCTAssertEqual(store.entries.map(\.text), ["hello"])
+        XCTAssertEqual(store.removeAll(fromApp: "com.1password.1password"), 0)
+    }
+
+    func testExclusionChecksEveryCandidateApp() {
+        let excluded: Set = ["com.1password.1password"]
+        XCTAssertTrue(AppExclusions.shouldSkip(
+            candidateApps: ["com.apple.Safari", "com.1password.1password"], excluded: excluded))
+        XCTAssertFalse(AppExclusions.shouldSkip(candidateApps: ["com.apple.Safari"], excluded: excluded))
+        XCTAssertFalse(AppExclusions.shouldSkip(candidateApps: [], excluded: excluded))
+    }
+
+    func testDefaultsIncludeCommonPasswordManagers() {
+        XCTAssertTrue(AppExclusions.defaultExcluded.contains("com.1password.1password"))
+        XCTAssertTrue(AppExclusions.defaultExcluded.contains("com.apple.Passwords"))
+    }
+
     func testConcealedTypesAreIgnored() {
         XCTAssertTrue(ClipFormatting.shouldIgnore(types: ["public.utf8-plain-text", "org.nspasteboard.ConcealedType"]))
         XCTAssertFalse(ClipFormatting.shouldIgnore(types: ["public.utf8-plain-text"]))

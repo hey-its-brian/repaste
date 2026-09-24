@@ -2,14 +2,8 @@
 
 ## Planned
 
-- [ ] **Per-app exclusion**: turn off history recording for specific apps (for example a password
-  manager, banking app, or terminal). Each entry already stores `sourceAppBundleID`, the frontmost
-  app at copy time, so the remaining work is:
-  - A list of excluded bundle IDs in Settings, with an app picker (`NSOpenPanel` on /Applications)
-    and a remove button per row
-  - A check in `PasteboardWatcher.poll()` that skips copies whose source app is excluded
-  - Optional: a "Remove existing entries from this app" action when an app is added
-  - Optional: "Don't record from <frontmost app>" shortcut in the right-click menu
+- [x] **Per-app exclusion**: Excluded Apps list in Settings (password managers by default),
+  right-click "Don't Record from <app>", and purging existing entries when an app is added
 
 ## Ideas
 

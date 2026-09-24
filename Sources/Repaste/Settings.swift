@@ -25,6 +25,7 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.autoPaste) private var autoPaste = false
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var accessibilityTrusted = AutoPaster.isTrusted
+    @ObservedObject var excludedApps: ExcludedApps
 
     private let trustTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let range = HistoryStore.limitRange
@@ -45,6 +46,38 @@ struct SettingsView: View {
                 Text("The menu shows your last \(historyLimit) copied items (\(range.lowerBound) to \(range.upperBound)).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("Excluded Apps") {
+                ForEach(excludedApps.bundleIDs.map(AppInfo.init).sorted { $0.name < $1.name }, id: \.bundleID) { app in
+                    HStack {
+                        Image(nsImage: app.icon)
+                            .resizable()
+                            .frame(width: 18, height: 18)
+                        Text(app.name)
+                        if !app.isInstalled {
+                            Text("Not installed")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button {
+                            excludedApps.remove(app.bundleID)
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Record copies from \(app.name) again")
+                    }
+                }
+                HStack {
+                    Text("Nothing copied while these apps are in front is recorded. Adding an app also deletes its existing entries.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Add App…") { excludedApps.chooseAndAdd() }
+                }
             }
 
             Section("Pasting") {
@@ -99,10 +132,15 @@ struct SettingsView: View {
 
 final class SettingsWindowController {
     private var window: NSWindow?
+    private let excludedApps: ExcludedApps
+
+    init(excludedApps: ExcludedApps) {
+        self.excludedApps = excludedApps
+    }
 
     func show() {
         if window == nil {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
+            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(excludedApps: excludedApps)))
             window.title = "Repaste Settings"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false

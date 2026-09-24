@@ -67,6 +67,16 @@ public final class HistoryStore {
         if entries.count != before { changed() }
     }
 
+    /// Removes every entry copied from the given app. Returns how many were removed.
+    @discardableResult
+    public func removeAll(fromApp bundleID: String) -> Int {
+        let before = entries.count
+        entries.removeAll { $0.sourceAppBundleID == bundleID }
+        let removed = before - entries.count
+        if removed > 0 { changed() }
+        return removed
+    }
+
     public func clear() {
         guard !entries.isEmpty else { return }
         entries.removeAll()

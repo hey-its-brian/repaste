@@ -5,15 +5,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var store: HistoryStore!
     private let watcher = PasteboardWatcher()
-    private let settingsWindow = SettingsWindowController()
+    private let excludedApps = ExcludedApps()
+    private lazy var settingsWindow = SettingsWindowController(excludedApps: excludedApps)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         SettingsDefaults.register()
 
         store = HistoryStore(fileURL: Self.historyFileURL, limit: currentLimit)
 
+        watcher.shouldSkipApps = { [weak self] apps in
+            guard let self else { return true }
+            return AppExclusions.shouldSkip(candidateApps: apps, excluded: Set(excludedApps.bundleIDs))
+        }
         watcher.onCopy = { [weak self] text, source in
             self?.store.add(text, sourceAppBundleID: source)
+        }
+        excludedApps.onAdd = { [weak self] bundleID in
+            self?.store.removeAll(fromApp: bundleID)
         }
         watcher.start()
 
@@ -144,10 +152,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func optionsMenu() -> NSMenu {
         let menu = NSMenu()
+        // Repaste never activates when its menu opens, so the frontmost app is the one in use.
+        if let app = NSWorkspace.shared.frontmostApplication, let id = app.bundleIdentifier,
+           id != Bundle.main.bundleIdentifier {
+            let name = app.localizedName ?? id
+            let excluded = excludedApps.contains(id)
+            let item = actionItem(excluded ? "Resume Recording from \(name)" : "Don’t Record from \(name)",
+                                  #selector(toggleExclusion(_:)))
+            item.representedObject = id
+            menu.addItem(item)
+            menu.addItem(.separator())
+        }
         menu.addItem(actionItem("Settings…", #selector(openSettings), key: ","))
         menu.addItem(.separator())
         menu.addItem(actionItem("Quit Repaste", #selector(quit), key: "q"))
         return menu
+    }
+
+    @objc private func toggleExclusion(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String else { return }
+        if excludedApps.contains(id) {
+            excludedApps.remove(id)
+        } else {
+            excludedApps.add(id)
+        }
     }
 
     @objc private func openSettings() {
