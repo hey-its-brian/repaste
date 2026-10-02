@@ -3,6 +3,22 @@
 A lightweight macOS menu bar clipboard history. It remembers the text you copy so you can
 paste it again later. No Dock icon, no main window.
 
+## Install
+
+Requires an Apple Silicon Mac running macOS 14 or later.
+
+1. Download the latest `Repaste-<version>.zip` from
+   [Releases](https://github.com/hey-its-brian/repaste/releases/latest).
+2. Unzip it and move **Repaste.app** to Applications.
+3. Open it. Repaste is signed with a Developer ID and notarized by Apple, so macOS opens it
+   after the usual "downloaded from the internet" confirmation; no Terminal commands needed.
+4. If macOS asks whether Repaste can read the clipboard, choose **Allow**.
+
+Upgrading from 1.0.0: that build used a different signature, so macOS treats 1.0.1 as a new
+app. If you turned on auto-paste, grant Accessibility permission again (remove the old Repaste
+entry in System Settings > Privacy & Security > Accessibility first). Your history and settings
+carry over.
+
 ## Using it
 
 - **Left click** the clipboard icon to see your recent copies, newest first.
@@ -43,13 +59,30 @@ paste it again later. No Dock icon, no main window.
 Requires Xcode (the Command Line Tools alone lack SwiftUI's macro plugin).
 
 ```bash
-./scripts/build-app.sh            # builds build/Repaste.app
+./scripts/build-app.sh            # builds build/Repaste.app for local use
 ./scripts/build-app.sh --install  # also copies it to /Applications
 swift test                        # runs the RepasteCore unit tests
+./scripts/release.sh              # signed, notarized zip in build/release
 ```
 
-The build is signed with your Apple Development identity when one exists, so Accessibility
-permission survives rebuilds.
+Local builds are signed with your Apple Development identity when one exists, so
+Accessibility permission survives rebuilds (ad hoc otherwise).
+
+### Releases
+
+`scripts/release.sh` builds the app, signs it with the Developer ID Application certificate
+for team L6X8U2TQ6F (hardened runtime, secure timestamp), submits it to Apple's notary
+service, staples the ticket, and zips it. It prints the SHA-256 for the release notes.
+
+One-time setup: install the Developer ID Application certificate in your login keychain, then
+save notary credentials (it prompts for an app-specific password from account.apple.com):
+
+```bash
+xcrun notarytool store-credentials repaste-notary --apple-id <your Apple ID> --team-id L6X8U2TQ6F
+```
+
+Set `NOTARY_PROFILE=<name>` to use credentials saved under a different profile name. The
+version number lives at the top of `scripts/build-app.sh`.
 
 ## Roadmap
 

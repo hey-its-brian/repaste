@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Builds Repaste.app into ./build. Pass --install to copy it to /Applications.
+# Builds Repaste.app into ./build for local use. Pass --install to copy it to /Applications.
+# For a signed, notarized download, use scripts/release.sh instead.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 APP="build/Repaste.app"
+VERSION="1.0.1"
+BUILD="2"
 
 # SwiftUI macros need full Xcode; the Command Line Tools lack SwiftUI's macro plugin.
 # Use Xcode even if xcode-select still points at the Command Line Tools.
@@ -30,8 +33,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>Repaste</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.0.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleVersion</key><string>$BUILD</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
   <key>LSUIElement</key><true/>
